@@ -96,6 +96,7 @@ application.fam              Flipper app manifest
 src/                         App source, NFC worker, storage, QR generation
 assets/                      Embedded XBM icon used by the Canvas UI
 images/                      10x10 catalog/app icon
+screenshots/                 Catalog screenshots
 docs/catalog_description.md  Catalog-ready short description
 docs/changelog.md            Catalog changelog
 ```
