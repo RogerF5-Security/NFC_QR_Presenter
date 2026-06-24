@@ -73,7 +73,10 @@ typedef struct {
 } NfcQrApp;
 
 typedef struct {
-    NfcQrApp* app;
+    char payload_name[NFC_QR_NAME_LEN];
+    char nfc_label[16];
+    uint8_t qr[qrcodegen_BUFFER_LEN_FOR_VERSION(NFC_QR_QR_MAX_VERSION)];
+    bool qr_ready;
 } NfcQrShareModel;
 
 static void nfc_qr_main_menu_callback(void* context, uint32_t index);
@@ -147,6 +150,29 @@ static const char* nfc_qr_share_nfc_label(NfcQrNfcStatus status) {
     }
 }
 
+static void nfc_qr_update_share_model(NfcQrApp* app, bool redraw) {
+    if(!app || !app->share_view) return;
+
+    NfcQrShareModel* model = view_get_model(app->share_view);
+    if(!model) return;
+
+    memset(model, 0, sizeof(NfcQrShareModel));
+    if(app->selected_index < app->payload_count) {
+        strlcpy(
+            model->payload_name,
+            app->payloads[app->selected_index].name,
+            sizeof(model->payload_name));
+    }
+    strlcpy(
+        model->nfc_label,
+        nfc_qr_share_nfc_label(app->nfc_worker.status),
+        sizeof(model->nfc_label));
+    model->qr_ready = app->qr_ready;
+    if(app->qr_ready) memcpy(model->qr, app->qr, sizeof(model->qr));
+
+    view_commit_model(app->share_view, redraw);
+}
+
 static void nfc_qr_refresh_payload_menu(NfcQrApp* app) {
     submenu_reset(app->payload_menu);
     submenu_set_header(app->payload_menu, nfc_qr_action_header(app->pending_action));
@@ -195,6 +221,7 @@ static bool nfc_qr_prepare_share(NfcQrApp* app) {
         app->nfc_worker.status = NfcQrNfcStatusErrorPayload;
     }
 
+    nfc_qr_update_share_model(app, false);
     nfc_qr_switch_view(app, NfcQrViewShare);
     return true;
 }
@@ -368,19 +395,18 @@ static void
 
 static void nfc_qr_share_draw(Canvas* canvas, void* model) {
     NfcQrShareModel* share_model = model;
-    NfcQrApp* app = share_model ? share_model->app : NULL;
 
     canvas_clear(canvas);
     canvas_set_color(canvas, ColorBlack);
 
-    if(!app) {
+    if(!share_model) {
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 18, 30, "Modelo invalido");
         elements_button_left(canvas, "Back");
         return;
     }
 
-    if(!app->qr_ready) {
+    if(!share_model->qr_ready) {
         canvas_draw_xbm(
             canvas, 8, 14, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
         canvas_set_font(canvas, FontPrimary);
@@ -389,7 +415,7 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
         return;
     }
 
-    const int qr_size = qrcodegen_getSize(app->qr);
+    const int qr_size = qrcodegen_getSize(share_model->qr);
     const int quiet = 1;
     int scale = 62 / (qr_size + (quiet * 2));
     if(scale < 1) scale = 1;
@@ -401,7 +427,7 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
     canvas_draw_frame(canvas, x0 - 1, y0 - 1, box + 2, box + 2);
     for(int y = 0; y < qr_size; y++) {
         for(int x = 0; x < qr_size; x++) {
-            if(qrcodegen_getModule(app->qr, x, y)) {
+            if(qrcodegen_getModule(share_model->qr, x, y)) {
                 canvas_draw_box(
                     canvas, x0 + ((x + quiet) * scale), y0 + ((y + quiet) * scale), scale, scale);
             }
@@ -409,13 +435,12 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
     }
 
     char payload_label[12];
-    nfc_qr_make_short_label(
-        payload_label, sizeof(payload_label), app->payloads[app->selected_index].name, 9);
+    nfc_qr_make_short_label(payload_label, sizeof(payload_label), share_model->payload_name, 9);
 
     canvas_draw_line(canvas, 66, 0, 66, 63);
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str(canvas, 70, 12, payload_label);
-    canvas_draw_str(canvas, 70, 25, nfc_qr_share_nfc_label(app->nfc_worker.status));
+    canvas_draw_str(canvas, 70, 25, share_model->nfc_label);
     canvas_draw_str(canvas, 70, 39, "QR + NFC");
     canvas_draw_str(canvas, 70, 61, "Back");
 }
@@ -483,7 +508,7 @@ static NfcQrApp* nfc_qr_app_alloc(void) {
     view_set_context(app->share_view, app);
     view_allocate_model(app->share_view, ViewModelTypeLockFree, sizeof(NfcQrShareModel));
     NfcQrShareModel* share_model = view_get_model(app->share_view);
-    share_model->app = app;
+    memset(share_model, 0, sizeof(NfcQrShareModel));
     view_commit_model(app->share_view, false);
     app->share_model_allocated = true;
     view_set_draw_callback(app->share_view, nfc_qr_share_draw);
@@ -517,6 +542,9 @@ static void nfc_qr_app_free(NfcQrApp* app) {
     }
 
     if(app->share_view) {
+        view_set_draw_callback(app->share_view, NULL);
+        view_set_input_callback(app->share_view, NULL);
+        view_set_context(app->share_view, NULL);
         if(app->share_model_allocated) view_free_model(app->share_view);
         view_free(app->share_view);
     }
@@ -535,7 +563,7 @@ static void nfc_qr_tick_callback(void* context) {
     NfcQrApp* app = context;
     if(!app || (app->current_view != NfcQrViewShare) || !app->share_view) return;
 
-    view_commit_model(app->share_view, true);
+    nfc_qr_update_share_model(app, true);
 }
 
 int32_t nfc_qr_presenter_app(void* p) {
