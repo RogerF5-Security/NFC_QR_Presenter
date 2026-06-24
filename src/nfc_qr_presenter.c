@@ -18,7 +18,6 @@
 #define NFC_QR_QR_MAX_VERSION 10
 
 typedef enum {
-    NfcQrViewBanner,
     NfcQrViewMain,
     NfcQrViewPayloads,
     NfcQrViewTextInput,
@@ -46,7 +45,6 @@ typedef struct {
     Submenu* payload_menu;
     TextInput* text_input;
     DialogEx* dialog;
-    View* banner_view;
     View* share_view;
 
     NfcQrView current_view;
@@ -84,11 +82,6 @@ static void nfc_qr_text_input_done(void* context);
 static void nfc_qr_app_free(NfcQrApp* app);
 static void nfc_qr_tick_callback(void* context);
 static void nfc_qr_switch_view(NfcQrApp* app, NfcQrView view);
-
-static void nfc_qr_show_main(NfcQrApp* app) {
-    if(!app) return;
-    nfc_qr_switch_view(app, NfcQrViewMain);
-}
 
 static void nfc_qr_switch_view(NfcQrApp* app, NfcQrView view) {
     if(!app || !app->dispatcher) return;
@@ -152,60 +145,6 @@ static const char* nfc_qr_share_nfc_label(NfcQrNfcStatus status) {
     default:
         return "NFC: ERR";
     }
-}
-
-static void nfc_qr_banner_draw(Canvas* canvas, void* context) {
-    UNUSED(context);
-
-    canvas_clear(canvas);
-    canvas_set_color(canvas, ColorBlack);
-
-    canvas_draw_rframe(canvas, 3, 4, 122, 48, 4);
-    canvas_draw_rframe(canvas, 5, 6, 118, 44, 3);
-
-    canvas_draw_xbm(
-        canvas, 13, 13, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
-
-    canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 31, 18, "NFC QR Presenter");
-
-    canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 31, 30, "Digital card");
-    canvas_draw_str(canvas, 31, 40, "QR + NFC NDEF");
-
-    canvas_draw_rframe(canvas, 101, 12, 15, 15, 2);
-    canvas_draw_box(canvas, 104, 15, 3, 3);
-    canvas_draw_box(canvas, 110, 15, 3, 3);
-    canvas_draw_box(canvas, 104, 21, 3, 3);
-    canvas_draw_dot(canvas, 111, 22);
-    canvas_draw_dot(canvas, 114, 24);
-
-    canvas_draw_line(canvas, 91, 35, 94, 32);
-    canvas_draw_line(canvas, 91, 35, 94, 38);
-    canvas_draw_line(canvas, 95, 30, 100, 25);
-    canvas_draw_line(canvas, 95, 40, 100, 45);
-    canvas_draw_line(canvas, 101, 23, 108, 19);
-    canvas_draw_line(canvas, 101, 47, 108, 51);
-
-    elements_button_center(canvas, "OK");
-}
-
-static bool nfc_qr_banner_input(InputEvent* event, void* context) {
-    NfcQrApp* app = context;
-    if(!app || (event->type != InputTypeShort)) return false;
-
-    if((event->key == InputKeyOk) || (event->key == InputKeyRight) ||
-       (event->key == InputKeyDown)) {
-        nfc_qr_show_main(app);
-        return true;
-    }
-
-    if(event->key == InputKeyBack) {
-        view_dispatcher_stop(app->dispatcher);
-        return true;
-    }
-
-    return false;
 }
 
 static void nfc_qr_refresh_payload_menu(NfcQrApp* app) {
@@ -274,7 +213,7 @@ static void nfc_qr_payload_selected_callback(void* context, uint32_t index) {
         nfc_qr_prepare_share(app);
         break;
     case NfcQrPayloadActionAdd:
-        nfc_qr_show_main(app);
+        nfc_qr_switch_view(app, NfcQrViewMain);
         break;
     case NfcQrPayloadActionEdit:
         if(nfc_qr_storage_read_text(
@@ -392,11 +331,11 @@ static void nfc_qr_dialog_callback(DialogExResult result, void* context) {
             nfc_qr_show_status(
                 app, ok ? "Borrado" : "Error", ok ? "Payload eliminado" : "No se pudo borrar");
         } else if(result == DialogExResultLeft) {
-            nfc_qr_show_main(app);
+            nfc_qr_switch_view(app, NfcQrViewMain);
         }
     } else if(app->dialog_mode == NfcQrDialogStatus) {
         if(result == DialogExResultCenter) {
-            nfc_qr_show_main(app);
+            nfc_qr_switch_view(app, NfcQrViewMain);
         }
     }
 }
@@ -461,7 +400,7 @@ static bool nfc_qr_share_input(InputEvent* event, void* context) {
     NfcQrApp* app = context;
     if((event->type == InputTypeShort) && (event->key == InputKeyBack)) {
         nfc_qr_nfc_worker_stop(&app->nfc_worker);
-        nfc_qr_show_main(app);
+        nfc_qr_switch_view(app, NfcQrViewMain);
         return true;
     }
     return false;
@@ -470,13 +409,13 @@ static bool nfc_qr_share_input(InputEvent* event, void* context) {
 static bool nfc_qr_navigation_callback(void* context) {
     NfcQrApp* app = context;
 
-    if((app->current_view == NfcQrViewBanner) || (app->current_view == NfcQrViewMain)) {
+    if(app->current_view == NfcQrViewMain) {
         view_dispatcher_stop(app->dispatcher);
     } else {
         if(app->current_view == NfcQrViewShare) {
             nfc_qr_nfc_worker_stop(&app->nfc_worker);
         }
-        nfc_qr_show_main(app);
+        nfc_qr_switch_view(app, NfcQrViewMain);
     }
 
     return true;
@@ -497,11 +436,10 @@ static NfcQrApp* nfc_qr_app_alloc(void) {
     app->payload_menu = submenu_alloc();
     app->text_input = text_input_alloc();
     app->dialog = dialog_ex_alloc();
-    app->banner_view = view_alloc();
     app->share_view = view_alloc();
 
     if(!app->storage || !app->gui || !app->dispatcher || !app->main_menu || !app->payload_menu ||
-       !app->text_input || !app->dialog || !app->banner_view || !app->share_view) {
+       !app->text_input || !app->dialog || !app->share_view) {
         nfc_qr_app_free(app);
         return NULL;
     }
@@ -518,10 +456,6 @@ static NfcQrApp* nfc_qr_app_alloc(void) {
     dialog_ex_set_context(app->dialog, app);
     dialog_ex_set_result_callback(app->dialog, nfc_qr_dialog_callback);
 
-    view_set_context(app->banner_view, app);
-    view_set_draw_callback(app->banner_view, nfc_qr_banner_draw);
-    view_set_input_callback(app->banner_view, nfc_qr_banner_input);
-
     view_set_context(app->share_view, app);
     view_allocate_model(app->share_view, ViewModelTypeLockFree, sizeof(NfcQrShareModel));
     NfcQrShareModel* share_model = view_get_model(app->share_view);
@@ -531,7 +465,6 @@ static NfcQrApp* nfc_qr_app_alloc(void) {
     view_set_draw_callback(app->share_view, nfc_qr_share_draw);
     view_set_input_callback(app->share_view, nfc_qr_share_input);
 
-    view_dispatcher_add_view(app->dispatcher, NfcQrViewBanner, app->banner_view);
     view_dispatcher_add_view(app->dispatcher, NfcQrViewMain, submenu_get_view(app->main_menu));
     view_dispatcher_add_view(
         app->dispatcher, NfcQrViewPayloads, submenu_get_view(app->payload_menu));
@@ -556,11 +489,9 @@ static void nfc_qr_app_free(NfcQrApp* app) {
         view_dispatcher_remove_view(app->dispatcher, NfcQrViewPayloads);
         view_dispatcher_remove_view(app->dispatcher, NfcQrViewTextInput);
         view_dispatcher_remove_view(app->dispatcher, NfcQrViewDialog);
-        view_dispatcher_remove_view(app->dispatcher, NfcQrViewBanner);
         view_dispatcher_remove_view(app->dispatcher, NfcQrViewShare);
     }
 
-    if(app->banner_view) view_free(app->banner_view);
     if(app->share_view) {
         if(app->share_model_allocated) view_free_model(app->share_view);
         view_free(app->share_view);
@@ -594,7 +525,7 @@ int32_t nfc_qr_presenter_app(void* p) {
     nfc_qr_refresh_payloads(app);
     nfc_qr_refresh_main_menu(app);
     if(storage_ready) {
-        nfc_qr_switch_view(app, NfcQrViewBanner);
+        nfc_qr_switch_view(app, NfcQrViewMain);
     } else {
         nfc_qr_show_status(app, "SD Error", "Revise /ext");
     }

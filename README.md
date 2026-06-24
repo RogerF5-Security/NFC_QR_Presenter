@@ -6,7 +6,6 @@ The app stores payloads on the SD card, lets you manage them directly from the F
 
 ## Features
 
-- Startup banner drawn with native Canvas as a compact business-card style splash screen.
 - Dual presentation mode: QR code on screen plus NFC NDEF emulation in the background.
 - NFC emulation through the firmware NFC stack using a virtual NTAG21x / Mifare Ultralight profile.
 - Local payload management from the Flipper: Share, Add, Edit, and Delete.
@@ -81,11 +80,10 @@ ufbt launch
 ## Flipper Usage
 
 1. Open `Apps -> Tools -> NFC QR Presenter`.
-2. Press `OK` on the startup banner.
-3. Select `Share` and choose a payload.
-4. Scan the QR code or bring a phone near the Flipper to read the NFC NDEF tag.
-5. Press `Back` to stop NFC emulation and return to the menu.
-6. Use `Add`, `Edit`, or `Delete` to manage local payloads from the device.
+2. Select `Share` and choose a payload.
+3. Scan the QR code or bring a phone near the Flipper to read the NFC NDEF tag.
+4. Press `Back` to stop NFC emulation and return to the menu.
+5. Use `Add`, `Edit`, or `Delete` to manage local payloads from the device.
 
 When entering vCard data with the on-screen keyboard, literal `\n` sequences are converted into real line breaks before saving.
 
@@ -110,7 +108,7 @@ ufbt
 ufbt launch
 ```
 
-The hardware smoke test covered startup banner navigation, payload selection, QR view entry, NFC worker startup, and clean exit with `Back`.
+The hardware smoke test covered payload selection, QR view entry, NFC worker startup, and clean exit with `Back`.
 
 ## Third-Party Components
 
