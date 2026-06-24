@@ -16,8 +16,7 @@ typedef struct {
     uint8_t cc_data_area_size;
 } NfcQrNtagProfile;
 
-static const uint8_t nfc_qr_ntag21x_version[] =
-    {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x00, 0x03};
+static const uint8_t nfc_qr_ntag21x_version[] = {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x00, 0x03};
 
 static const NfcQrNtagProfile nfc_qr_ntag_profiles[] = {
     {
@@ -64,10 +63,7 @@ static void nfc_qr_generate_uid(uint8_t* uid) {
     uid[6] |= 0x80;
 }
 
-static bool nfc_qr_build_ntag_data(
-    MfUltralightData* data,
-    const uint8_t* ndef,
-    size_t ndef_len) {
+static bool nfc_qr_build_ntag_data(MfUltralightData* data, const uint8_t* ndef, size_t ndef_len) {
     if(!data || !data->iso14443_3a_data || !ndef || (ndef_len == 0)) return false;
 
     const NfcQrNtagProfile* profile = nfc_qr_pick_profile(ndef_len);
@@ -231,8 +227,7 @@ bool nfc_qr_nfc_worker_start(NfcQrNfcWorker* worker, const uint8_t* ndef, size_t
     worker->running = false;
     worker->status = NfcQrNfcStatusStarting;
 
-    worker->thread =
-        furi_thread_alloc_ex("NfcQrNdefEmu", 6144, nfc_qr_nfc_worker_thread, worker);
+    worker->thread = furi_thread_alloc_ex("NfcQrNdefEmu", 6144, nfc_qr_nfc_worker_thread, worker);
     if(!worker->thread) {
         worker->status = NfcQrNfcStatusErrorNoMemory;
         return false;

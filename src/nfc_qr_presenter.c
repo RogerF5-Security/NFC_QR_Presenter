@@ -2,7 +2,7 @@
 #include "nfc_qr_presenter.h"
 #include "qrcodegen.h"
 
-#include "../assets/nfc_qr_icon.xbm.h"
+#include "../assets/nfc_qr_icon_xbm.h"
 
 #include <furi.h>
 #include <gui/elements.h>
@@ -97,8 +97,7 @@ static void nfc_qr_switch_view(NfcQrApp* app, NfcQrView view) {
 }
 
 static void nfc_qr_refresh_payloads(NfcQrApp* app) {
-    app->payload_count =
-        nfc_qr_storage_scan(app->storage, app->payloads, COUNT_OF(app->payloads));
+    app->payload_count = nfc_qr_storage_scan(app->storage, app->payloads, COUNT_OF(app->payloads));
     if(app->selected_index >= app->payload_count) app->selected_index = 0;
 }
 
@@ -113,7 +112,11 @@ static void nfc_qr_show_status(NfcQrApp* app, const char* header, const char* te
 
 static void nfc_qr_refresh_main_menu(NfcQrApp* app) {
     submenu_reset(app->main_menu);
-    snprintf(app->status_buffer, sizeof(app->status_buffer), "Payloads: %u", (unsigned)app->payload_count);
+    snprintf(
+        app->status_buffer,
+        sizeof(app->status_buffer),
+        "Payloads: %u",
+        (unsigned)app->payload_count);
     submenu_set_header(app->main_menu, app->status_buffer);
     submenu_add_item(app->main_menu, "Compartir", NfcQrMainShare, nfc_qr_main_menu_callback, app);
     submenu_add_item(app->main_menu, "Agregar", NfcQrMainAdd, nfc_qr_main_menu_callback, app);
@@ -160,7 +163,8 @@ static void nfc_qr_banner_draw(Canvas* canvas, void* context) {
     canvas_draw_rframe(canvas, 3, 4, 122, 48, 4);
     canvas_draw_rframe(canvas, 5, 6, 118, 44, 3);
 
-    canvas_draw_xbm(canvas, 13, 13, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
+    canvas_draw_xbm(
+        canvas, 13, 13, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
 
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str(canvas, 31, 18, "NFC QR Presenter");
@@ -190,7 +194,8 @@ static bool nfc_qr_banner_input(InputEvent* event, void* context) {
     NfcQrApp* app = context;
     if(!app || (event->type != InputTypeShort)) return false;
 
-    if((event->key == InputKeyOk) || (event->key == InputKeyRight) || (event->key == InputKeyDown)) {
+    if((event->key == InputKeyOk) || (event->key == InputKeyRight) ||
+       (event->key == InputKeyDown)) {
         nfc_qr_show_main(app);
         return true;
     }
@@ -207,7 +212,8 @@ static void nfc_qr_refresh_payload_menu(NfcQrApp* app) {
     submenu_reset(app->payload_menu);
     submenu_set_header(app->payload_menu, nfc_qr_action_header(app->pending_action));
     for(size_t i = 0; i < app->payload_count; i++) {
-        submenu_add_item(app->payload_menu, app->payloads[i].name, i, nfc_qr_payload_selected_callback, app);
+        submenu_add_item(
+            app->payload_menu, app->payloads[i].name, i, nfc_qr_payload_selected_callback, app);
     }
     submenu_set_selected_item(app->payload_menu, app->selected_index);
 }
@@ -220,7 +226,8 @@ static bool nfc_qr_prepare_share(NfcQrApp* app) {
 
     NfcQrPayload* payload = &app->payloads[app->selected_index];
 
-    if(!nfc_qr_storage_read_text(app->storage, payload, app->text_buffer, sizeof(app->text_buffer))) {
+    if(!nfc_qr_storage_read_text(
+           app->storage, payload, app->text_buffer, sizeof(app->text_buffer))) {
         nfc_qr_show_status(app, "Error", "No se pudo leer TXT");
         return false;
     }
@@ -342,7 +349,12 @@ static void nfc_qr_main_menu_callback(void* context, uint32_t index) {
         text_input_set_header_text(app->text_input, "Nuevo payload");
         text_input_set_minimum_length(app->text_input, 1);
         text_input_set_result_callback(
-            app->text_input, nfc_qr_text_input_done, app, app->text_buffer, sizeof(app->text_buffer), true);
+            app->text_input,
+            nfc_qr_text_input_done,
+            app,
+            app->text_buffer,
+            sizeof(app->text_buffer),
+            true);
         nfc_qr_switch_view(app, NfcQrViewTextInput);
         return;
     }
@@ -377,7 +389,8 @@ static void nfc_qr_dialog_callback(DialogExResult result, void* context) {
                 nfc_qr_storage_delete_payload(app->storage, &app->payloads[app->selected_index]);
             nfc_qr_refresh_payloads(app);
             nfc_qr_refresh_main_menu(app);
-            nfc_qr_show_status(app, ok ? "Borrado" : "Error", ok ? "Payload eliminado" : "No se pudo borrar");
+            nfc_qr_show_status(
+                app, ok ? "Borrado" : "Error", ok ? "Payload eliminado" : "No se pudo borrar");
         } else if(result == DialogExResultLeft) {
             nfc_qr_show_main(app);
         }
@@ -412,7 +425,8 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
     }
 
     if(!app->qr_ready) {
-        canvas_draw_xbm(canvas, 8, 14, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
+        canvas_draw_xbm(
+            canvas, 8, 14, NFC_QR_ICON_XBM_WIDTH, NFC_QR_ICON_XBM_HEIGHT, nfc_qr_icon_xbm);
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 48, 28, "QR no listo");
         elements_button_left(canvas, "Back");
@@ -431,11 +445,7 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
         for(int x = 0; x < qr_size; x++) {
             if(qrcodegen_getModule(app->qr, x, y)) {
                 canvas_draw_box(
-                    canvas,
-                    x0 + ((x + quiet) * scale),
-                    y0 + ((y + quiet) * scale),
-                    scale,
-                    scale);
+                    canvas, x0 + ((x + quiet) * scale), y0 + ((y + quiet) * scale), scale, scale);
             }
         }
     }
@@ -523,8 +533,10 @@ static NfcQrApp* nfc_qr_app_alloc(void) {
 
     view_dispatcher_add_view(app->dispatcher, NfcQrViewBanner, app->banner_view);
     view_dispatcher_add_view(app->dispatcher, NfcQrViewMain, submenu_get_view(app->main_menu));
-    view_dispatcher_add_view(app->dispatcher, NfcQrViewPayloads, submenu_get_view(app->payload_menu));
-    view_dispatcher_add_view(app->dispatcher, NfcQrViewTextInput, text_input_get_view(app->text_input));
+    view_dispatcher_add_view(
+        app->dispatcher, NfcQrViewPayloads, submenu_get_view(app->payload_menu));
+    view_dispatcher_add_view(
+        app->dispatcher, NfcQrViewTextInput, text_input_get_view(app->text_input));
     view_dispatcher_add_view(app->dispatcher, NfcQrViewDialog, dialog_ex_get_view(app->dialog));
     view_dispatcher_add_view(app->dispatcher, NfcQrViewShare, app->share_view);
     app->views_registered = true;

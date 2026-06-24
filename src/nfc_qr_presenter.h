@@ -5,14 +5,14 @@
 #include <stdint.h>
 #include <storage/storage.h>
 
-#define NFC_QR_APP_ID "nfc_qr_presenter"
+#define NFC_QR_APP_ID   "nfc_qr_presenter"
 #define NFC_QR_DATA_DIR "/ext/apps_data/nfc_presenter"
 
 #define NFC_QR_MAX_PAYLOADS 16
-#define NFC_QR_NAME_LEN 32
-#define NFC_QR_PATH_LEN 128
-#define NFC_QR_TEXT_MAX 256
-#define NFC_QR_NDEF_MAX 384
+#define NFC_QR_NAME_LEN     32
+#define NFC_QR_PATH_LEN     128
+#define NFC_QR_TEXT_MAX     256
+#define NFC_QR_NDEF_MAX     384
 
 typedef struct {
     char name[NFC_QR_NAME_LEN];
@@ -29,10 +29,7 @@ typedef enum {
 
 bool nfc_qr_storage_init(Storage* storage);
 
-size_t nfc_qr_storage_scan(
-    Storage* storage,
-    NfcQrPayload* payloads,
-    size_t payloads_capacity);
+size_t nfc_qr_storage_scan(Storage* storage, NfcQrPayload* payloads, size_t payloads_capacity);
 
 bool nfc_qr_storage_read_text(
     Storage* storage,

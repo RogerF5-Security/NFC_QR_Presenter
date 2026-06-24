@@ -9,8 +9,7 @@
     "BEGIN:VCARD\nVERSION:3.0\nFN:Example Contact\nTEL;TYPE=CELL:+10000000000\nEND:VCARD"
 
 static bool nfc_qr_is_alnum(char c) {
-    return ((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z')) ||
-           ((c >= '0') && (c <= '9'));
+    return ((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z')) || ((c >= '0') && (c <= '9'));
 }
 
 static char nfc_qr_to_lower(char c) {
@@ -29,11 +28,8 @@ static void nfc_qr_make_path(char* out, size_t out_size, const char* name, const
     snprintf(out, out_size, "%s/%s%s", NFC_QR_DATA_DIR, name, ext);
 }
 
-static bool nfc_qr_write_file(
-    Storage* storage,
-    const char* path,
-    const void* data,
-    size_t data_len) {
+static bool
+    nfc_qr_write_file(Storage* storage, const char* path, const void* data, size_t data_len) {
     if(!storage || !path || !data) return false;
 
     bool ok = false;
@@ -101,7 +97,8 @@ static void nfc_qr_make_slug(const char* text, char* out, size_t out_size) {
         if(pos >= 24) break;
     }
 
-    while(pos > 0 && out[pos - 1] == '_') pos--;
+    while(pos > 0 && out[pos - 1] == '_')
+        pos--;
     if(pos == 0) {
         strlcpy(out, "payload", out_size);
     } else {
@@ -195,7 +192,8 @@ size_t nfc_qr_build_ndef_message(const char* text, uint8_t* out, size_t out_size
     }
 
     if(strncasecmp(text, "BEGIN:VCARD", 11) == 0) {
-        return nfc_qr_write_record(out, out_size, 0x02, "text/vcard", (const uint8_t*)text, text_len);
+        return nfc_qr_write_record(
+            out, out_size, 0x02, "text/vcard", (const uint8_t*)text, text_len);
     }
 
     if(text_len + 3 > sizeof(payload)) return 0;
@@ -244,10 +242,7 @@ bool nfc_qr_storage_init(Storage* storage) {
     return true;
 }
 
-size_t nfc_qr_storage_scan(
-    Storage* storage,
-    NfcQrPayload* payloads,
-    size_t payloads_capacity) {
+size_t nfc_qr_storage_scan(Storage* storage, NfcQrPayload* payloads, size_t payloads_capacity) {
     if(!storage || !payloads || (payloads_capacity == 0)) return 0;
 
     size_t count = 0;
@@ -289,7 +284,8 @@ bool nfc_qr_storage_read_text(
     size_t out_size) {
     size_t read_len = 0;
     if(!storage || !payload || !out || (out_size == 0)) return false;
-    if(!nfc_qr_read_file(storage, payload->txt_path, (uint8_t*)out, out_size, &read_len)) return false;
+    if(!nfc_qr_read_file(storage, payload->txt_path, (uint8_t*)out, out_size, &read_len))
+        return false;
     out[read_len] = '\0';
     return true;
 }
