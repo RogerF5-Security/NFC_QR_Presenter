@@ -21,6 +21,10 @@ The app creates and maintains payload pairs:
 /ext/apps_data/nfc_presenter/
   url.txt
   url.ndef
+  github.txt
+  github.ndef
+  linkedin.txt
+  linkedin.ndef
   contact.txt
   contact.ndef
   <payload>.txt
@@ -34,6 +38,16 @@ Bundled generic demo payloads:
 ```text
 url.txt
 https://example.com/
+```
+
+```text
+github.txt
+https://github.com/RogerF5-Security
+```
+
+```text
+linkedin.txt
+https://www.linkedin.com/in/rogerf5/
 ```
 
 ```text

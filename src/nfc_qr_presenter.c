@@ -337,13 +337,33 @@ static void nfc_qr_dialog_callback(DialogExResult result, void* context) {
     }
 }
 
-static void nfc_qr_draw_payload_preview(Canvas* canvas, const char* text) {
-    char preview[48];
-    strlcpy(preview, text, sizeof(preview));
-    for(size_t i = 0; preview[i]; i++) {
-        if((preview[i] == '\n') || (preview[i] == '\r') || (preview[i] == '\t')) preview[i] = ' ';
+static void
+    nfc_qr_make_short_label(char* out, size_t out_size, const char* text, size_t max_chars) {
+    if(!out || (out_size == 0)) return;
+    if(!text) {
+        out[0] = '\0';
+        return;
     }
-    canvas_draw_str(canvas, 70, 29, preview);
+
+    size_t len = 0;
+    while(text[len] && (text[len] != '\n') && (text[len] != '\r'))
+        len++;
+
+    if(len < out_size && len <= max_chars) {
+        memcpy(out, text, len);
+        out[len] = '\0';
+        return;
+    }
+
+    const size_t visible = (max_chars > 2) ? max_chars - 2 : 1;
+    const size_t copy_len = (visible < out_size - 1) ? visible : out_size - 1;
+    memcpy(out, text, copy_len);
+    out[copy_len] = '\0';
+    if((copy_len + 2) < out_size) {
+        out[copy_len] = '.';
+        out[copy_len + 1] = '.';
+        out[copy_len + 2] = '\0';
+    }
 }
 
 static void nfc_qr_share_draw(Canvas* canvas, void* model) {
@@ -370,10 +390,12 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
     }
 
     const int qr_size = qrcodegen_getSize(app->qr);
-    const int quiet = 2;
-    const int scale = (qr_size <= 25) ? 2 : 1;
+    const int quiet = 1;
+    int scale = 62 / (qr_size + (quiet * 2));
+    if(scale < 1) scale = 1;
+    if(scale > 2) scale = 2;
     const int box = (qr_size + (quiet * 2)) * scale;
-    const int x0 = (box >= 62) ? 1 : 5;
+    const int x0 = (64 - box) / 2;
     const int y0 = (64 - box) / 2;
 
     canvas_draw_frame(canvas, x0 - 1, y0 - 1, box + 2, box + 2);
@@ -386,11 +408,16 @@ static void nfc_qr_share_draw(Canvas* canvas, void* model) {
         }
     }
 
+    char payload_label[12];
+    nfc_qr_make_short_label(
+        payload_label, sizeof(payload_label), app->payloads[app->selected_index].name, 9);
+
+    canvas_draw_line(canvas, 66, 0, 66, 63);
     canvas_set_font(canvas, FontSecondary);
-    canvas_draw_str(canvas, 70, 10, app->payloads[app->selected_index].name);
-    canvas_draw_str(canvas, 70, 20, nfc_qr_share_nfc_label(app->nfc_worker.status));
-    nfc_qr_draw_payload_preview(canvas, app->text_buffer);
-    elements_button_left(canvas, "Back");
+    canvas_draw_str(canvas, 70, 12, payload_label);
+    canvas_draw_str(canvas, 70, 25, nfc_qr_share_nfc_label(app->nfc_worker.status));
+    canvas_draw_str(canvas, 70, 39, "QR + NFC");
+    canvas_draw_str(canvas, 70, 61, "Back");
 }
 
 static bool nfc_qr_share_input(InputEvent* event, void* context) {

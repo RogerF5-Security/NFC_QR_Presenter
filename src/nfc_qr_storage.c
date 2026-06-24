@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define NFC_QR_DEFAULT_URL "https://example.com/"
+#define NFC_QR_DEFAULT_URL      "https://example.com/"
+#define NFC_QR_DEFAULT_GITHUB   "https://github.com/RogerF5-Security"
+#define NFC_QR_DEFAULT_LINKEDIN "https://www.linkedin.com/in/rogerf5/"
 #define NFC_QR_DEFAULT_CONTACT \
     "BEGIN:VCARD\nVERSION:3.0\nFN:Example Contact\nTEL;TYPE=CELL:+10000000000\nEND:VCARD"
 
@@ -231,6 +233,18 @@ bool nfc_qr_storage_init(Storage* storage) {
     nfc_qr_make_path(ndef_path, sizeof(ndef_path), "url", ".ndef");
     if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
         if(!nfc_qr_storage_write_named(storage, "url", NFC_QR_DEFAULT_URL)) return false;
+    }
+
+    nfc_qr_make_path(txt_path, sizeof(txt_path), "github", ".txt");
+    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "github", ".ndef");
+    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
+        if(!nfc_qr_storage_write_named(storage, "github", NFC_QR_DEFAULT_GITHUB)) return false;
+    }
+
+    nfc_qr_make_path(txt_path, sizeof(txt_path), "linkedin", ".txt");
+    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "linkedin", ".ndef");
+    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
+        if(!nfc_qr_storage_write_named(storage, "linkedin", NFC_QR_DEFAULT_LINKEDIN)) return false;
     }
 
     nfc_qr_make_path(txt_path, sizeof(txt_path), "contact", ".txt");
