@@ -8,6 +8,6 @@ Main features:
 - NFC NDEF emulation through the firmware NFC stack.
 - Local payload management from the device: share, add, edit, and delete.
 - SD card storage under /ext/apps_data/nfc_presenter/ using paired TXT and NDEF files.
-- Generic bundled demo payloads with no personal data.
+- No bundled personal or demo payloads; payloads are created by the user on device.
 
 The app is designed for quick sharing of URLs, vCards, and short text payloads during events, meetings, and demos.

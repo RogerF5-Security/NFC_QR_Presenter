@@ -4,12 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define NFC_QR_DEFAULT_URL      "https://example.com/"
-#define NFC_QR_DEFAULT_GITHUB   "https://github.com/RogerF5-Security"
-#define NFC_QR_DEFAULT_LINKEDIN "https://www.linkedin.com/in/rogerf5/"
-#define NFC_QR_DEFAULT_CONTACT \
-    "BEGIN:VCARD\nVERSION:3.0\nFN:Example Contact\nTEL;TYPE=CELL:+10000000000\nEND:VCARD"
-
 static bool nfc_qr_is_alnum(char c) {
     return ((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z')) || ((c >= '0') && (c <= '9'));
 }
@@ -225,34 +219,6 @@ bool nfc_qr_storage_init(Storage* storage) {
     if(!storage) return false;
     if(!storage_simply_mkdir(storage, "/ext/apps_data")) return false;
     if(!storage_simply_mkdir(storage, NFC_QR_DATA_DIR)) return false;
-
-    char txt_path[NFC_QR_PATH_LEN];
-    char ndef_path[NFC_QR_PATH_LEN];
-
-    nfc_qr_make_path(txt_path, sizeof(txt_path), "url", ".txt");
-    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "url", ".ndef");
-    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
-        if(!nfc_qr_storage_write_named(storage, "url", NFC_QR_DEFAULT_URL)) return false;
-    }
-
-    nfc_qr_make_path(txt_path, sizeof(txt_path), "github", ".txt");
-    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "github", ".ndef");
-    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
-        if(!nfc_qr_storage_write_named(storage, "github", NFC_QR_DEFAULT_GITHUB)) return false;
-    }
-
-    nfc_qr_make_path(txt_path, sizeof(txt_path), "linkedin", ".txt");
-    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "linkedin", ".ndef");
-    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
-        if(!nfc_qr_storage_write_named(storage, "linkedin", NFC_QR_DEFAULT_LINKEDIN)) return false;
-    }
-
-    nfc_qr_make_path(txt_path, sizeof(txt_path), "contact", ".txt");
-    nfc_qr_make_path(ndef_path, sizeof(ndef_path), "contact", ".ndef");
-    if(!storage_common_exists(storage, txt_path) || !storage_common_exists(storage, ndef_path)) {
-        if(!nfc_qr_storage_write_named(storage, "contact", NFC_QR_DEFAULT_CONTACT)) return false;
-    }
-
     return true;
 }
 

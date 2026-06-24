@@ -2,7 +2,7 @@
 
 NFC QR Presenter is a Flipper Zero external application for Momentum firmware. It turns the device into a small digital business card presenter: the selected payload is rendered as a QR code on screen and emulated at the same time as an NFC NDEF tag.
 
-The app stores payloads on the SD card, lets you manage them directly from the Flipper UI, and includes only generic demo data.
+The app stores payloads on the SD card and lets you manage them directly from the Flipper UI. It ships without bundled personal or demo payloads.
 
 ## Features
 
@@ -15,49 +15,15 @@ The app stores payloads on the SD card, lets you manage them directly from the F
 
 ## SD Card Layout
 
-The app creates and maintains payload pairs:
+The app creates the data directory and maintains payload pairs:
 
 ```text
 /ext/apps_data/nfc_presenter/
-  url.txt
-  url.ndef
-  github.txt
-  github.ndef
-  linkedin.txt
-  linkedin.ndef
-  contact.txt
-  contact.ndef
   <payload>.txt
   <payload>.ndef
 ```
 
 `*.txt` contains the text used for the QR code. `*.ndef` contains the binary NDEF message used by NFC emulation.
-
-Bundled generic demo payloads:
-
-```text
-url.txt
-https://example.com/
-```
-
-```text
-github.txt
-https://github.com/RogerF5-Security
-```
-
-```text
-linkedin.txt
-https://www.linkedin.com/in/rogerf5/
-```
-
-```text
-contact.txt
-BEGIN:VCARD
-VERSION:3.0
-FN:Example Contact
-TEL;TYPE=CELL:+10000000000
-END:VCARD
-```
 
 ## Build With uFBT
 
@@ -94,10 +60,11 @@ ufbt launch
 ## Flipper Usage
 
 1. Open `Apps -> Tools -> NFC QR Presenter`.
-2. Select `Share` and choose a payload.
-3. Scan the QR code or bring a phone near the Flipper to read the NFC NDEF tag.
-4. Press `Back` to stop NFC emulation and return to the menu.
-5. Use `Add`, `Edit`, or `Delete` to manage local payloads from the device.
+2. Use `Add` to create a URL, vCard, or short text payload.
+3. Select `Share` and choose a payload.
+4. Scan the QR code or bring a phone near the Flipper to read the NFC NDEF tag.
+5. Press `Back` to stop NFC emulation and return to the menu.
+6. Use `Edit` or `Delete` to manage local payloads from the device.
 
 When entering vCard data with the on-screen keyboard, literal `\n` sequences are converted into real line breaks before saving.
 
