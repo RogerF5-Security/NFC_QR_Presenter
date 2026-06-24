@@ -7,7 +7,7 @@ The app stores payloads on the SD card, lets you manage them directly from the F
 ## Features
 
 - Dual presentation mode: QR code on screen plus NFC NDEF emulation in the background.
-- NFC emulation through the firmware NFC stack using a virtual NTAG21x / Mifare Ultralight profile.
+- NFC emulation through the firmware NFC stack using a virtual NTAG203 / Mifare Ultralight profile.
 - Local payload management from the Flipper: Share, Add, Edit, and Delete.
 - SD persistence under `/ext/apps_data/nfc_presenter/`.
 - URL, vCard, and plain text payload support.

@@ -8,51 +8,15 @@
 #include <string.h>
 
 #define NFC_QR_NXP_MANUFACTURER_ID 0x04
-
-typedef struct {
-    MfUltralightType type;
-    uint16_t pages_total;
-    uint8_t version_storage_size;
-    uint8_t cc_data_area_size;
-} NfcQrNtagProfile;
-
-static const uint8_t nfc_qr_ntag21x_version[] = {0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x00, 0x03};
-
-static const NfcQrNtagProfile nfc_qr_ntag_profiles[] = {
-    {
-        .type = MfUltralightTypeNTAG213,
-        .pages_total = 45,
-        .version_storage_size = 0x0F,
-        .cc_data_area_size = 0x12,
-    },
-    {
-        .type = MfUltralightTypeNTAG215,
-        .pages_total = 135,
-        .version_storage_size = 0x11,
-        .cc_data_area_size = 0x3E,
-    },
-    {
-        .type = MfUltralightTypeNTAG216,
-        .pages_total = 231,
-        .version_storage_size = 0x13,
-        .cc_data_area_size = 0x6D,
-    },
-};
+#define NFC_QR_NTAG203_PAGES_TOTAL 42
+#define NFC_QR_NTAG203_USER_BYTES  144
 
 static size_t nfc_qr_tlv_len(size_t ndef_len) {
     return (ndef_len < 0xFF) ? (ndef_len + 3) : (ndef_len + 5);
 }
 
-static const NfcQrNtagProfile* nfc_qr_pick_profile(size_t ndef_len) {
-    const size_t tlv_len = nfc_qr_tlv_len(ndef_len);
-
-    for(size_t i = 0; i < COUNT_OF(nfc_qr_ntag_profiles); i++) {
-        const size_t user_bytes =
-            (nfc_qr_ntag_profiles[i].pages_total - 9) * MF_ULTRALIGHT_PAGE_SIZE;
-        if(tlv_len <= user_bytes) return &nfc_qr_ntag_profiles[i];
-    }
-
-    return NULL;
+static bool nfc_qr_ndef_fits_ntag203(size_t ndef_len) {
+    return nfc_qr_tlv_len(ndef_len) <= NFC_QR_NTAG203_USER_BYTES;
 }
 
 static void nfc_qr_generate_uid(uint8_t* uid) {
@@ -65,9 +29,7 @@ static void nfc_qr_generate_uid(uint8_t* uid) {
 
 static bool nfc_qr_build_ntag_data(MfUltralightData* data, const uint8_t* ndef, size_t ndef_len) {
     if(!data || !data->iso14443_3a_data || !ndef || (ndef_len == 0)) return false;
-
-    const NfcQrNtagProfile* profile = nfc_qr_pick_profile(ndef_len);
-    if(!profile) return false;
+    if(!nfc_qr_ndef_fits_ntag203(ndef_len)) return false;
 
     Iso14443_3aData* iso14443_3a_data = data->iso14443_3a_data;
     memset(data, 0, sizeof(MfUltralightData));
@@ -82,16 +44,14 @@ static bool nfc_qr_build_ntag_data(MfUltralightData* data, const uint8_t* ndef, 
     data->iso14443_3a_data->atqa[1] = 0x00;
     data->iso14443_3a_data->sak = 0x00;
 
-    data->type = profile->type;
-    data->pages_total = profile->pages_total;
-    data->pages_read = profile->pages_total;
-    memcpy(&data->version, nfc_qr_ntag21x_version, sizeof(nfc_qr_ntag21x_version));
-    data->version.storage_size = profile->version_storage_size;
+    data->type = MfUltralightTypeNTAG203;
+    data->pages_total = NFC_QR_NTAG203_PAGES_TOTAL;
+    data->pages_read = NFC_QR_NTAG203_PAGES_TOTAL;
 
     data->page[2].data[1] = 0x48;
     data->page[3].data[0] = 0xE1;
     data->page[3].data[1] = 0x10;
-    data->page[3].data[2] = profile->cc_data_area_size;
+    data->page[3].data[2] = 0x12;
     data->page[3].data[3] = 0x00;
 
     size_t tlv_pos = 0;
@@ -109,24 +69,8 @@ static bool nfc_qr_build_ntag_data(MfUltralightData* data, const uint8_t* ndef, 
     tlv_pos += ndef_len;
     tlv[tlv_pos++] = 0xFE;
 
-    const size_t first_user_page = 4;
-    const size_t user_pages = profile->pages_total - 9;
-    if(tlv_pos > user_pages * MF_ULTRALIGHT_PAGE_SIZE) return false;
-
     for(size_t i = 0; i < tlv_pos; i++) {
-        data->page[first_user_page + (i / MF_ULTRALIGHT_PAGE_SIZE)]
-            .data[i % MF_ULTRALIGHT_PAGE_SIZE] = tlv[i];
-    }
-
-    const uint16_t config_index = profile->pages_total - 4;
-    data->page[config_index].data[0] = 0x04;
-    data->page[config_index].data[3] = 0xFF;
-    data->page[config_index + 1].data[1] = 0x05;
-    memset(&data->page[config_index + 2], 0xFF, sizeof(MfUltralightPage));
-    data->page[config_index - 1].data[3] = MF_ULTRALIGHT_TEARING_FLAG_DEFAULT;
-
-    for(size_t i = 0; i < COUNT_OF(data->tearing_flag); i++) {
-        data->tearing_flag[i].data = MF_ULTRALIGHT_TEARING_FLAG_DEFAULT;
+        data->page[4 + (i / MF_ULTRALIGHT_PAGE_SIZE)].data[i % MF_ULTRALIGHT_PAGE_SIZE] = tlv[i];
     }
 
     return true;
@@ -216,7 +160,7 @@ bool nfc_qr_nfc_worker_start(NfcQrNfcWorker* worker, const uint8_t* ndef, size_t
         return false;
     }
 
-    if(!nfc_qr_pick_profile(ndef_len)) {
+    if(!nfc_qr_ndef_fits_ntag203(ndef_len)) {
         worker->status = NfcQrNfcStatusErrorPayload;
         return false;
     }
