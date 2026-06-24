@@ -171,13 +171,10 @@ static bool nfc_qr_prepare_share(NfcQrApp* app) {
         return false;
     }
 
-    if(!nfc_qr_storage_read_ndef(
-           app->storage, payload, app->ndef, sizeof(app->ndef), &app->ndef_len)) {
-        app->ndef_len = nfc_qr_build_ndef_message(app->text_buffer, app->ndef, sizeof(app->ndef));
-        if(app->ndef_len == 0) {
-            nfc_qr_show_status(app, "Error", "NDEF invalido");
-            return false;
-        }
+    app->ndef_len = nfc_qr_build_ndef_message(app->text_buffer, app->ndef, sizeof(app->ndef));
+    if(app->ndef_len == 0) {
+        nfc_qr_show_status(app, "Error", "NDEF invalido");
+        return false;
     }
 
     app->qr_ready = qrcodegen_encodeText(
